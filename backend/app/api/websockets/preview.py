@@ -1,10 +1,27 @@
 """WebSocket handler for real-time audio preview streaming."""
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from typing import Any
 import json
 import asyncio
 
 router = APIRouter()
+
+
+def tensor_to_numpy(tensor: Any) -> Any:
+    """
+    Safely convert a PyTorch tensor to numpy array.
+
+    Handles CUDA, MPS, and CPU tensors by ensuring they are moved
+    to CPU before calling .numpy().
+    """
+    if hasattr(tensor, "cpu"):
+        tensor = tensor.cpu()
+    if hasattr(tensor, "detach"):
+        tensor = tensor.detach()
+    if hasattr(tensor, "numpy"):
+        return tensor.numpy()
+    return tensor
 
 
 @router.websocket("/preview")
@@ -180,7 +197,9 @@ async def _generate_preview_stream(
                 if should_stop_fn():
                     break
 
-                audio_bytes = audio_chunk.cpu().numpy().astype("float32").tobytes()
+                # Safely convert tensor to numpy (handles CUDA/MPS/CPU)
+                audio_np = tensor_to_numpy(audio_chunk)
+                audio_bytes = audio_np.astype("float32").tobytes()
                 await websocket.send_bytes(audio_bytes)
 
     except Exception as e:

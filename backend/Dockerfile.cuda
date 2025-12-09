@@ -1,25 +1,29 @@
-# Platform-agnostic base image
-# For NVIDIA GPU: Use docker-compose.nvidia.yml overlay
-# For Apple Silicon: Run backend natively for MPS support
-FROM python:3.11-slim-bookworm
+# NVIDIA CUDA-optimized Dockerfile
+# Use this for systems with NVIDIA GPUs and CUDA support
+FROM nvidia/cuda:12.1-runtime-ubuntu22.04
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
+    python3.11 \
+    python3.11-venv \
+    python3-pip \
     ffmpeg \
     curl \
     git \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/python3.11 /usr/bin/python3 \
+    && ln -sf /usr/bin/python3.11 /usr/bin/python
 
 # Set working directory
 WORKDIR /app
 
 # Install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir --upgrade pip && \
+    pip3 install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .

@@ -15,9 +15,21 @@ A full-featured web application for creating multi-speaker audio content using M
 
 ## Requirements
 
+### NVIDIA GPU (Recommended)
 - **GPU**: NVIDIA RTX 3060 (8GB VRAM) or better
 - **Docker**: Docker Engine with NVIDIA Container Toolkit
 - **Memory**: 16GB RAM recommended
+- **Storage**: 20GB+ for models and generated audio
+
+### Apple Silicon (M1/M2/M3)
+- **Mac**: Apple Silicon Mac with 16GB+ unified memory
+- **Python**: 3.11+
+- **PyTorch**: 2.0+ with MPS support
+- **Docker**: Docker Desktop for Mac (for supporting services)
+
+### CPU-Only (Slower)
+- **Memory**: 32GB RAM recommended
+- **Docker**: Docker Engine
 - **Storage**: 20GB+ for models and generated audio
 
 ## Quick Start
@@ -35,10 +47,43 @@ cp .env.example .env
 nano .env
 ```
 
-### 2. Start with Docker Compose
+### 2. Start Services
+
+#### Option A: NVIDIA GPU
 
 ```bash
-# Start all services
+# Start with NVIDIA GPU support
+docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up -d
+
+# View logs
+docker compose logs -f
+```
+
+#### Option B: Apple Silicon (M1/M2/M3)
+
+For best performance on Apple Silicon, run the backend natively with MPS acceleration:
+
+```bash
+# Start supporting services only (Redis, frontend)
+docker compose up -d redis frontend
+
+# Run backend natively with MPS
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Start the backend (uses MPS automatically)
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+# In another terminal, start the Celery worker
+celery -A app.workers.celery_app worker -l info -c 1 -Q generation,export
+```
+
+#### Option C: CPU-Only (Any Platform)
+
+```bash
+# Start all services (CPU mode)
 docker compose up -d
 
 # View logs
@@ -202,13 +247,27 @@ VibeCast Studio implements several safety measures:
 
 ## Troubleshooting
 
-### GPU Not Detected
+### GPU Not Detected (NVIDIA)
 
 Ensure NVIDIA Container Toolkit is installed:
 ```bash
 nvidia-ctk --version
 docker run --rm --gpus all nvidia/cuda:12.1-base-ubuntu22.04 nvidia-smi
 ```
+
+### MPS Not Working (Apple Silicon)
+
+Verify MPS is available in Python:
+```python
+import torch
+print(f"MPS available: {torch.backends.mps.is_available()}")
+print(f"MPS built: {torch.backends.mps.is_built()}")
+```
+
+If MPS is not available:
+- Update to macOS 12.3 or later
+- Install PyTorch 2.0+ with MPS support: `pip install torch torchvision torchaudio`
+- Ensure you're running Python natively (not through Rosetta)
 
 ### Model Download Issues
 
@@ -223,6 +282,11 @@ If you encounter OOM errors:
 - Close other GPU-intensive applications
 - Reduce batch size in generation options
 - Consider using shorter content chunks
+
+For Apple Silicon:
+- MPS uses unified memory shared with the system
+- Close memory-intensive applications
+- 16GB unified memory is minimum recommended
 
 ## License
 

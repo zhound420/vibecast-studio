@@ -1,7 +1,11 @@
 version: '3.8'
 
+# Base configuration (CPU-only)
+# For NVIDIA GPU support: docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up
+# For Apple Silicon: Run backend natively for MPS acceleration
+
 services:
-  # FastAPI Backend with GPU access
+  # FastAPI Backend
   backend:
     build:
       context: ./backend
@@ -14,7 +18,6 @@ services:
       - STORAGE_PATH=/app/storage
       - CLAUDE_API_KEY=${CLAUDE_API_KEY}
       - HF_HOME=/app/models
-      - CUDA_VISIBLE_DEVICES=0
     volumes:
       - ./storage:/app/storage
       - model-cache:/app/models
@@ -22,13 +25,6 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
       interval: 30s
@@ -37,7 +33,7 @@ services:
       start_period: 60s
     restart: unless-stopped
 
-  # Celery Worker (GPU-enabled for TTS generation)
+  # Celery Worker (TTS generation)
   worker:
     build:
       context: ./backend
@@ -49,7 +45,6 @@ services:
       - STORAGE_PATH=/app/storage
       - CLAUDE_API_KEY=${CLAUDE_API_KEY}
       - HF_HOME=/app/models
-      - CUDA_VISIBLE_DEVICES=0
     volumes:
       - ./storage:/app/storage
       - model-cache:/app/models
@@ -59,13 +54,6 @@ services:
         condition: service_healthy
       backend:
         condition: service_healthy
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
     restart: unless-stopped
 
   # Celery Beat (Scheduler for cleanup tasks)

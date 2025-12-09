@@ -9,6 +9,22 @@ from app.services.vibevoice.model_manager import ModelManager
 from app.services.vibevoice.chunker import Chunk
 
 
+def tensor_to_numpy(tensor: Any) -> Any:
+    """
+    Safely convert a PyTorch tensor to numpy array.
+
+    Handles CUDA, MPS, and CPU tensors by ensuring they are moved
+    to CPU before calling .numpy().
+    """
+    if hasattr(tensor, "cpu"):
+        tensor = tensor.cpu()
+    if hasattr(tensor, "detach"):
+        tensor = tensor.detach()
+    if hasattr(tensor, "numpy"):
+        return tensor.numpy()
+    return tensor
+
+
 @dataclass
 class GenerationProgress:
     """Progress tracking for generation jobs."""
@@ -137,14 +153,14 @@ class VibeVoiceGenerator:
                 lambda: model.generate(**inputs),
             )
 
-            # Extract audio from output
+            # Extract audio from output (safely handle CUDA/MPS/CPU tensors)
             if hasattr(output, "speech_outputs"):
-                audio = output.speech_outputs[0].cpu().numpy()
+                audio = tensor_to_numpy(output.speech_outputs[0])
             elif hasattr(output, "audio"):
-                audio = output.audio.cpu().numpy()
+                audio = tensor_to_numpy(output.audio)
             else:
                 # Fallback: assume output is the audio tensor
-                audio = output.cpu().numpy()
+                audio = tensor_to_numpy(output)
 
             # Save chunk
             import scipy.io.wavfile as wavfile

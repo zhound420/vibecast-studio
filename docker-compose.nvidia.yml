@@ -1,0 +1,38 @@
+version: '3.8'
+
+# NVIDIA GPU overlay
+# Usage: docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up -d
+#
+# Requirements:
+# - NVIDIA GPU with CUDA support
+# - NVIDIA Container Toolkit installed
+# - Docker configured with nvidia runtime
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.cuda
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.cuda
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
