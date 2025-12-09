@@ -34,60 +34,26 @@ A full-featured web application for creating multi-speaker audio content using M
 
 ## Quick Start
 
-### 1. Clone and Configure
+### 1. Clone and Setup
 
 ```bash
 git clone https://github.com/zhound420/vibecast-studio.git
 cd vibecast-studio
 
-# Copy environment template
-cp .env.example .env
-
-# Edit .env and add your Claude API key (optional)
-nano .env
+# Run the interactive setup wizard
+./setup.sh
 ```
 
-### 2. Start Services
+The setup wizard will:
+- Detect your platform (NVIDIA GPU / Apple Silicon / CPU)
+- Configure environment variables
+- Set up Python virtual environment (Apple Silicon only)
+- Pull Docker images
 
-#### Option A: NVIDIA GPU
-
-```bash
-# Start with NVIDIA GPU support
-docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up -d
-
-# View logs
-docker compose logs -f
-```
-
-#### Option B: Apple Silicon (M1/M2/M3)
-
-For best performance on Apple Silicon, run the backend natively with MPS acceleration:
+### 2. Start the Application
 
 ```bash
-# Start supporting services only (Redis, frontend)
-docker compose up -d redis frontend
-
-# Run backend natively with MPS
-cd backend
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Start the backend (uses MPS automatically)
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-
-# In another terminal, start the Celery worker
-celery -A app.workers.celery_app worker -l info -c 1 -Q generation,export
-```
-
-#### Option C: CPU-Only (Any Platform)
-
-```bash
-# Start all services (CPU mode)
-docker compose up -d
-
-# View logs
-docker compose logs -f
+./start.sh
 ```
 
 ### 3. Access the Application
@@ -96,6 +62,52 @@ docker compose logs -f
 - **API**: http://localhost:8000
 - **API Docs**: http://localhost:8000/docs
 - **Flower (Task Monitor)**: http://localhost:5555
+
+### Other Commands
+
+```bash
+./stop.sh      # Stop all services
+./status.sh    # Check service status
+./logs.sh      # View logs (all services)
+./logs.sh backend   # View backend logs only
+```
+
+### Manual Setup (Alternative)
+
+<details>
+<summary>Click to expand manual setup instructions</summary>
+
+#### NVIDIA GPU
+
+```bash
+cp .env.example .env
+docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up -d
+```
+
+#### Apple Silicon (M1/M2/M3/M4)
+
+```bash
+cp .env.example .env
+docker compose up -d redis frontend
+
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+# In another terminal:
+celery -A app.workers.celery_app worker -l info -c 1 -Q generation,export
+```
+
+#### CPU-Only
+
+```bash
+cp .env.example .env
+docker compose up -d
+```
+
+</details>
 
 ## Architecture
 
