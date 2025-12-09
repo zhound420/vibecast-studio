@@ -1,5 +1,3 @@
-version: '3.8'
-
 # Base configuration (CPU-only)
 # For NVIDIA GPU support: docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up
 # For Apple Silicon: Run backend natively for MPS acceleration
