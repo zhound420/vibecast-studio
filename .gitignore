@@ -9,6 +9,8 @@ __pycache__/
 *$py.class
 *.so
 .Python
+venv/
+*/venv/
 build/
 develop-eggs/
 dist/
@@ -85,3 +87,6 @@ celerybeat.pid
 tmp/
 temp/
 *.tmp
+
+# VibeCast runtime config
+.vibecast/
