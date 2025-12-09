@@ -225,7 +225,8 @@ are_containers_running() {
 
     cd "$PROJECT_ROOT"
     local running
-    running=$($compose_cmd ps --format json 2>/dev/null | grep -c '"running"' || echo "0")
+    running=$($compose_cmd ps -q 2>/dev/null | wc -l | tr -d ' ')
+    running=${running:-0}
 
     [[ "$running" -gt 0 ]]
 }
