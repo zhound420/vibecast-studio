@@ -1,0 +1,87 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Build outputs
+frontend/dist/
+frontend/build/
+*.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Storage (keep structure, ignore contents)
+storage/audio/*
+storage/exports/*
+storage/uploads/*
+storage/music/*
+storage/projects/*
+!storage/**/.gitkeep
+
+# Database
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Model cache (large files)
+models/
+*.pt
+*.bin
+*.safetensors
+
+# Logs
+logs/
+*.log
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Docker
+.docker/
+
+# Temporary files
+tmp/
+temp/
+*.tmp

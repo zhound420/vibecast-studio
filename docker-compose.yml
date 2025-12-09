@@ -1,0 +1,134 @@
+version: '3.8'
+
+services:
+  # FastAPI Backend with GPU access
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./storage/vibecast.db
+      - REDIS_URL=redis://redis:6379/0
+      - STORAGE_PATH=/app/storage
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+      - HF_HOME=/app/models
+      - CUDA_VISIBLE_DEVICES=0
+    volumes:
+      - ./storage:/app/storage
+      - model-cache:/app/models
+      - ./backend:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  # Celery Worker (GPU-enabled for TTS generation)
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A app.workers.celery_app worker -l info -c 1 -Q generation,export
+    environment:
+      - DATABASE_URL=sqlite:///./storage/vibecast.db
+      - REDIS_URL=redis://redis:6379/0
+      - STORAGE_PATH=/app/storage
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+      - HF_HOME=/app/models
+      - CUDA_VISIBLE_DEVICES=0
+    volumes:
+      - ./storage:/app/storage
+      - model-cache:/app/models
+      - ./backend:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  # Celery Beat (Scheduler for cleanup tasks)
+  beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A app.workers.celery_app beat -l info
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - STORAGE_PATH=/app/storage
+    volumes:
+      - ./storage:/app/storage
+      - ./backend:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Redis (Message Broker + Result Backend)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Flower (Celery Monitoring)
+  flower:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A app.workers.celery_app flower --port=5555
+    ports:
+      - "5555:5555"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+      worker:
+        condition: service_started
+    restart: unless-stopped
+
+  # React Frontend (Nginx in production)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  model-cache:

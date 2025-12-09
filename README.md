@@ -1,0 +1,237 @@
+# VibeCast Studio
+
+A full-featured web application for creating multi-speaker audio content using Microsoft's VibeVoice TTS models. Create podcasts, audiobooks, interviews, and more with up to 90 minutes of audio and 4 distinct speakers.
+
+## Features
+
+- **Multi-Speaker Support**: Up to 4 distinct speakers with voice mapping
+- **Long-Form Generation**: Support for up to 90 minutes of audio content
+- **9 Embedded Voices**: English, Chinese, and Indian English voices
+- **Real-time Preview**: Quick preview using VibeVoice-Realtime-0.5B
+- **Script Editor**: Screenplay-style editor with drag-and-drop reordering
+- **Claude Integration**: AI-powered dialogue enhancement (optional)
+- **Professional Export**: MP3/WAV export with chapter markers
+- **Safety Features**: Audio watermarking and AI disclaimers
+
+## Requirements
+
+- **GPU**: NVIDIA RTX 3060 (8GB VRAM) or better
+- **Docker**: Docker Engine with NVIDIA Container Toolkit
+- **Memory**: 16GB RAM recommended
+- **Storage**: 20GB+ for models and generated audio
+
+## Quick Start
+
+### 1. Clone and Configure
+
+```bash
+git clone <repository-url>
+cd vibecast-studio
+
+# Copy environment template
+cp .env.example .env
+
+# Edit .env and add your Claude API key (optional)
+nano .env
+```
+
+### 2. Start with Docker Compose
+
+```bash
+# Start all services
+docker compose up -d
+
+# View logs
+docker compose logs -f
+```
+
+### 3. Access the Application
+
+- **Frontend**: http://localhost:3000
+- **API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+- **Flower (Task Monitor)**: http://localhost:5555
+
+## Architecture
+
+```
+vibecast-studio/
+├── backend/              # FastAPI backend
+│   ├── app/
+│   │   ├── api/          # REST API routes
+│   │   ├── models/       # SQLAlchemy models
+│   │   ├── schemas/      # Pydantic schemas
+│   │   ├── services/     # Business logic
+│   │   └── workers/      # Celery tasks
+├── frontend/             # React + TypeScript frontend
+│   ├── src/
+│   │   ├── api/          # API client
+│   │   ├── components/   # React components
+│   │   ├── pages/        # Page components
+│   │   └── store/        # Zustand stores
+└── storage/              # Generated files
+```
+
+## Docker Services
+
+| Service | Port | Description |
+|---------|------|-------------|
+| frontend | 3000 | React app served by Nginx |
+| backend | 8000 | FastAPI REST API |
+| worker | - | Celery worker for TTS generation |
+| beat | - | Celery scheduler |
+| redis | 6379 | Message broker |
+| flower | 5555 | Task monitoring |
+
+## Available Voices
+
+| Voice ID | Name | Language | Gender |
+|----------|------|----------|--------|
+| en-Alice_woman | Alice | English | Female |
+| en-Carter_man | Carter | English | Male |
+| en-Frank_man | Frank | English | Male |
+| en-Mary_woman_bgm | Mary | English | Female |
+| en-Maya_woman | Maya | English | Female |
+| in-Samuel_man | Samuel | Indian English | Male |
+| zh-Anchen_man_bgm | Anchen | Chinese | Male |
+| zh-Bowen_man | Bowen | Chinese | Male |
+| zh-Xinran_woman | Xinran | Chinese | Female |
+
+## API Usage
+
+### Create a Project
+
+```bash
+curl -X POST http://localhost:8000/api/v1/projects \
+  -H "Content-Type: application/json" \
+  -d '{"name": "My Podcast"}'
+```
+
+### Add Script Content
+
+```bash
+curl -X POST http://localhost:8000/api/v1/scripts/{project_id}/parse \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "[1] Hello, welcome to our podcast!\n[2] Thanks for having me!",
+    "format": "bracket"
+  }'
+```
+
+### Start Generation
+
+```bash
+curl -X POST http://localhost:8000/api/v1/generation/start \
+  -H "Content-Type: application/json" \
+  -d '{
+    "project_id": "your-project-id",
+    "voice_mapping": {
+      "1": "en-Carter_man",
+      "2": "en-Alice_woman"
+    }
+  }'
+```
+
+## Script Formats
+
+VibeCast supports multiple script formats:
+
+### Bracket Format
+```
+[1] Speaker one dialogue
+[2] Speaker two dialogue
+```
+
+### Named Speaker Format
+```
+Host: Welcome to the show!
+Guest: Thanks for having me!
+```
+
+### Numbered Format
+```
+1. First speaker's line
+2. Second speaker's line
+```
+
+## Development
+
+### Backend Development
+
+```bash
+cd backend
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run development server
+uvicorn app.main:app --reload
+```
+
+### Frontend Development
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+```
+
+## Safety & Ethics
+
+VibeCast Studio implements several safety measures:
+
+1. **Audio Watermarking**: All generated audio includes an imperceptible watermark
+2. **AI Disclaimers**: Generated content includes "AI Generated" metadata
+3. **Rate Limiting**: Generation requests are rate-limited to prevent abuse
+4. **Usage Logging**: Generation requests are logged (hashed) for traceability
+
+### Prohibited Uses
+
+- Voice impersonation or deepfakes
+- Disinformation or misleading content
+- Content in unsupported languages
+- Real-time voice conversion for deceptive purposes
+
+## Troubleshooting
+
+### GPU Not Detected
+
+Ensure NVIDIA Container Toolkit is installed:
+```bash
+nvidia-ctk --version
+docker run --rm --gpus all nvidia/cuda:12.1-base-ubuntu22.04 nvidia-smi
+```
+
+### Model Download Issues
+
+Models are downloaded on first use. Ensure you have:
+- Stable internet connection
+- Sufficient disk space (10GB+)
+- HuggingFace access (no token required for public models)
+
+### Out of Memory
+
+If you encounter OOM errors:
+- Close other GPU-intensive applications
+- Reduce batch size in generation options
+- Consider using shorter content chunks
+
+## License
+
+This project uses Microsoft's VibeVoice models which are released under MIT license.
+See individual component licenses for details.
+
+## Acknowledgments
+
+- [Microsoft VibeVoice](https://github.com/microsoft/VibeVoice) for the TTS models
+- [Anthropic Claude](https://anthropic.com) for dialogue enhancement
+- [FastAPI](https://fastapi.tiangolo.com) for the backend framework
+- [React](https://react.dev) for the frontend framework
