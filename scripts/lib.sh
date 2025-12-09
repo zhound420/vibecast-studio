@@ -338,16 +338,16 @@ prompt_choice() {
     shift
     local options=("$@")
 
-    echo ""
-    echo "$prompt"
-    echo ""
+    echo "" >&2
+    echo "$prompt" >&2
+    echo "" >&2
 
     local i=1
     for opt in "${options[@]}"; do
-        echo -e "  ${CYAN}[$i]${NC} $opt"
+        echo -e "  ${CYAN}[$i]${NC} $opt" >&2
         ((i++))
     done
-    echo ""
+    echo "" >&2
 
     local choice
     read -r -p "Enter choice [1-${#options[@]}]: " choice
