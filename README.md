@@ -25,7 +25,7 @@ A full-featured web application for creating multi-speaker audio content using M
 ### 1. Clone and Configure
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/zhound420/vibecast-studio.git
 cd vibecast-studio
 
 # Copy environment template
